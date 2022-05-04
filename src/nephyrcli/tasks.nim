@@ -78,7 +78,7 @@ proc parseNimbleArgs(): NimbleArgs =
       quit(1)
 
   let
-    npathcmd = "nimble --silent path nephyr"
+    npathcmd = "nimble --silent path nephyrcli"
     (nephyrPath, rcode) = system.gorgeEx(npathcmd)
   if rcode != 0:
     raise newException( ValueError, fmt"error running getting Nephyr path using: {npathcmd}")
