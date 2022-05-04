@@ -325,7 +325,7 @@ task zDepsClone, "clone Nephyr deps":
         wasCloned = true
         echo fmt"cloning: {getCurrentDir()=}"
         echo fmt"cloning: {dep}"
-        exec(fmt"pwd")
+        exec(fmt"echo \"MYPWD:\": $(pwd)")
         let (res2, code3) = gorgeEx(fmt"pwd")
         echo fmt"output: {res2}"
 
