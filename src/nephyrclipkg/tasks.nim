@@ -311,7 +311,7 @@ task zsign, "Flasing Zephyr project":
 
 task zDepsClone, "clone Nephyr deps":
   var wasCloned = false
-  withDir(projectDir() & "../../packages/"):
+  withDir(projectDir() & "/../../packages/"):
     echo fmt"work in directory: {projectDir()=}"
     for dep in ["mcu_utils", "fastrpc", "nephyr"]:
       if not dirExists(dep):
