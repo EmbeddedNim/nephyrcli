@@ -308,13 +308,33 @@ task zephyr_sign, "Flasing Zephyr project":
 
 ### Actions to ensure correct steps occur before/after certain tasks ###
 
+task depsClone, "clone Nephyr deps":
+  var wasCloned = false
+  withDir("../../packages/"):
+    for dep in ["mcu_utils", "fastrpc", "nephyr"]:
+      if not dirExists(dep):
+        wasCloned = true
+        echo fmt"cloning: {dep}"
+        exec(fmt"git clone https://github.com/EmbeddedNim/{dep}")
+      else:
+        echo fmt"dir exists: {dep}"
+  if wasCloned:
+    try:
+      exec(fmt"nimble sync")
+    except OSError:
+      echo "Note: nim sync fails on first run"
+      echo "Note: running again"
+      exec(fmt"nimble sync")
+
 before zephyr_compile:
+  depsCloneTask()
   zephyrConfigureTask()
 
 after zephyr_compile:
   zephyrInstallHeadersTask()
 
 before zephyr_build:
+  depsCloneTask()
   zephyrConfigureTask()
   zephyrCompileTask()
   zephyrInstallHeadersTask()
