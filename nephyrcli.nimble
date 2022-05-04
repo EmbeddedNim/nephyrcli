@@ -1,13 +1,14 @@
 # Package
 
-version       = "0.1.15"
+version       = "0.2.0"
 author        = "Jaremy Creechley"
 description   = "nephyr cli utils"
 license       = "Apache-2.0"
 srcDir        = "src"
 installExt    = @["nim"]
 binDir        = "bin"
-bin           = @["nephrcli", "nfreeze", "nunfreeze"]
+bin           = @["nephyrcli", "nephyrclipkg/cli/nfreeze", "nephyrclipkg/cli/nunfreeze"]
+skipDirs = @["nephyrcli"]
 
 
 # Dependencies
