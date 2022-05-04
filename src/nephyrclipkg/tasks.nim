@@ -310,7 +310,9 @@ task zsign, "Flasing Zephyr project":
   exec("west sign -t imgtool -p ${MCUBOOT}/scripts/imgtool.py -d build_${BOARD} -- --key ${MCUBOOT}/root-rsa-2048.pem")
 
 task zDepsClone, "clone Nephyr deps":
+  var nopts = parseNimbleArgs()
   var wasCloned = false
+  echo fmt"work: {nopts.projDir=}"
   echo fmt"work: {projectPath()=}"
   echo fmt"work: {projectDir()=}"
   echo fmt"work: {getCurrentDir()=}"
