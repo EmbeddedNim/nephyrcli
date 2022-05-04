@@ -323,6 +323,7 @@ task zDepsClone, "clone Nephyr deps":
     for dep in ["mcu_utils", "fastrpc", "nephyr"]:
       if not dirExists(dep):
         wasCloned = true
+        echo fmt"cloning: {getCurrentDir()=}"
         echo fmt"cloning: {dep}"
         let (res1, code1) = gorgeEx(fmt"pwd")
         echo fmt"output: {res1}"
