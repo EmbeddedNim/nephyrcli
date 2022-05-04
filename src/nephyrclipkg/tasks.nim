@@ -326,9 +326,9 @@ task zDepsClone, "clone Nephyr deps":
         echo fmt"cloning: {dep}"
         exec("echo \"MYPWD:\": $(pwd)".fmt)
         exec(fmt"git clone -v https://github.com/EmbeddedNim/{dep}")
+        exec("echo \"MYDEP:\": $(ls -1)".fmt)
       else:
         echo fmt"dir exists: {dep}"
-  exec("echo \"MYPKGS:\": $(ls -lh)".fmt)
   echo "ls cwd: ", ".".listFiles()
   echo "ls packages:", "../../packages/".listFiles()
   if wasCloned:
