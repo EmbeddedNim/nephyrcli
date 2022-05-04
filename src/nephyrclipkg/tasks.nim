@@ -195,7 +195,7 @@ task zInstallHeaders, "Install nim headers":
   else:
     echo("...nimbase.h already exists")
 
-task zephyr_clean, "Clean nimcache":
+task zclean, "Clean nimcache":
   echo "\n[Nephyr] Cleaning nimcache:"
   let
     nopts = parseNimbleArgs()
@@ -355,6 +355,7 @@ task zephyr_flash, "Flash Nephyr project":
 
 before zcompile:
   zDepsCloneTask()
+  zcleanTask()
   zConfigureTask()
 
 after zcompile:
@@ -362,6 +363,7 @@ after zcompile:
 
 before zbuild:
   zDepsCloneTask()
+  zcleanTask()
   zConfigureTask()
   zCompileTask()
   zInstallHeadersTask()
@@ -369,6 +371,7 @@ before zbuild:
 ## TODO: erase me after transition to zbuild, zcompile
 before zephyr_compile:
   zDepsCloneTask()
+  zcleanTask()
   zConfigureTask()
 
 after zephyr_compile:
@@ -376,6 +379,7 @@ after zephyr_compile:
 
 before zephyr_build:
   zDepsCloneTask()
+  zcleanTask()
   zConfigureTask()
   zCompileTask()
   zInstallHeadersTask()
