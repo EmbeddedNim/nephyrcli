@@ -1,10 +1,11 @@
-import system/nimscript
+# import system/nimscript
 
 import strutils, sequtils
 import tables
 import json
 
-import os except getEnv, paramCount, paramStr, existsEnv, fileExists, dirExists, findExe
+# import os except getEnv, paramCount, paramStr, existsEnv, fileExists, dirExists, findExe
+import os
 
 
 import zconfs
