@@ -316,6 +316,11 @@ task zDepsClone, "clone Nephyr deps":
       if not dirExists(dep):
         wasCloned = true
         echo fmt"cloning: {dep}"
+        let (res1, code1) = gorgeEx(fmt"pwd")
+        echo fmt"output: {res1}"
+        let (res2, code3) = gorgeEx(fmt"pwd")
+        echo fmt"output: {res2}"
+
         let (res, code) = gorgeEx(fmt"git clone -v https://github.com/EmbeddedNim/{dep}")
         echo fmt"result: {code}"
         echo fmt"output: {res}"
