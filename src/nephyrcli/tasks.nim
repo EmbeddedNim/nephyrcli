@@ -81,7 +81,7 @@ proc parseNimbleArgs(): NimbleArgs =
     npathcmd = "nimble --silent path nephyr"
     (nephyrPath, rcode) = system.gorgeEx(npathcmd)
   if rcode != 0:
-    raise newException( ValueError, "error running getting Nephyr path using: `%#`" % [npathcmd])
+    raise newException( ValueError, fmt"error running getting Nephyr path using: {npathcmd}")
 
   # TODO: make these configurable and add more examples...
   let
