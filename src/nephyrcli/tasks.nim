@@ -342,14 +342,14 @@ task zephyr_flash, "Flash Nephyr project":
 ### Actions to ensure correct steps occur before/after certain tasks ###
 
 before zcompile:
-  depsCloneTask()
+  zDepsCloneTask()
   zConfigureTask()
 
 after zcompile:
   zInstallHeadersTask()
 
 before zbuild:
-  depsCloneTask()
+  zDepsCloneTask()
   zConfigureTask()
   zCompileTask()
   zInstallHeadersTask()
