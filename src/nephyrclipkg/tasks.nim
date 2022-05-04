@@ -322,6 +322,9 @@ task zDepsClone, "clone Nephyr deps":
   echo "finished cloning..."
   echo "ls cwd: ", ".".listFiles()
   echo "ls packages:", "../../packages/".listFiles()
+
+task zDepsCloneSync, "clone Nephyr deps":
+  var wasCloned = true
   if wasCloned:
     try:
       exec(fmt"nimble sync")
