@@ -319,6 +319,8 @@ task zDepsClone, "clone Nephyr deps":
         exec(fmt"git clone https://github.com/EmbeddedNim/{dep}")
       else:
         echo fmt"dir exists: {dep}"
+  echo "ls cwd: ", ".".listFiles()
+  echo "ls packages:", "../../packages/".listFiles()
   if wasCloned:
     try:
       exec(fmt"nimble sync")
