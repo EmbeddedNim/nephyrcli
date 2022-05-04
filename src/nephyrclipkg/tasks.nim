@@ -309,7 +309,7 @@ task zsign, "Flasing Zephyr project":
   # FIXME!!
   exec("west sign -t imgtool -p ${MCUBOOT}/scripts/imgtool.py -d build_${BOARD} -- --key ${MCUBOOT}/root-rsa-2048.pem")
 
-task zDepsClones, "clone Nephyr deps":
+task zDepsClone, "clone Nephyr deps":
   var wasCloned = false
   withDir("../../packages/"):
     for dep in ["mcu_utils", "fastrpc", "nephyr"]:
@@ -319,12 +319,8 @@ task zDepsClones, "clone Nephyr deps":
         exec(fmt"git clone https://github.com/EmbeddedNim/{dep}")
       else:
         echo fmt"dir exists: {dep}"
-  echo "finished cloning..."
   echo "ls cwd: ", ".".listFiles()
   echo "ls packages:", "../../packages/".listFiles()
-
-task zDepsCloneSync, "clone Nephyr deps":
-  var wasCloned = true
   if wasCloned:
     try:
       exec(fmt"nimble sync")
@@ -348,28 +344,28 @@ task zephyr_flash, "Flash Nephyr project":
 ### Actions to ensure correct steps occur before/after certain tasks ###
 
 before zcompile:
-  zDepsClonesTask()
+  zDepsCloneTask()
   zConfigureTask()
 
 after zcompile:
   zInstallHeadersTask()
 
 before zbuild:
-  zDepsClonesTask()
+  zDepsCloneTask()
   zConfigureTask()
   zCompileTask()
   zInstallHeadersTask()
 
 ## TODO: erase me after transition to zbuild, zcompile
 before zephyr_compile:
-  zDepsClonesTask()
+  zDepsCloneTask()
   zConfigureTask()
 
 after zephyr_compile:
   zInstallHeadersTask()
 
 before zephyr_build:
-  zDepsClonesTask()
+  zDepsCloneTask()
   zConfigureTask()
   zCompileTask()
   zInstallHeadersTask()
