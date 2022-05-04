@@ -29,7 +29,7 @@ type
     cachedir: string
     # zephyr_version: string
     app_template: string
-    nephyr_path: string
+    # nephyr_path: string
     debug: bool
     forceclean: bool
     distclean: bool
@@ -77,11 +77,11 @@ proc parseNimbleArgs(): NimbleArgs =
       echo "  got source directory: ", projsrc
       quit(1)
 
-  let
-    npathcmd = "nimble --silent path nephyrcli"
-    (nephyrPath, rcode) = system.gorgeEx(npathcmd)
-  if rcode != 0:
-    raise newException( ValueError, fmt"error running getting Nephyr path using: {npathcmd}")
+  # let
+  #   npathcmd = "nimble --silent path nephyrcli"
+  #   (nephyrPath, rcode) = system.gorgeEx(npathcmd)
+  # if rcode != 0:
+  #   raise newException( ValueError, fmt"error running getting Nephyr path using: {npathcmd}")
 
   # TODO: make these configurable and add more examples...
   let
@@ -100,7 +100,7 @@ proc parseNimbleArgs(): NimbleArgs =
     appsrc: srcDir,
     projname: projectName(),
     projfile: progfile,
-    nephyrpath: nephyrPath,
+    # nephyrpath: nephyrPath,
     # zephyr_template: zephyr_template,
     app_template: app_template,
     # forceupdatecache = "--forceUpdateCache" in idf_args
