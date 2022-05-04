@@ -309,7 +309,7 @@ task zsign, "Flasing Zephyr project":
   # FIXME!!
   exec("west sign -t imgtool -p ${MCUBOOT}/scripts/imgtool.py -d build_${BOARD} -- --key ${MCUBOOT}/root-rsa-2048.pem")
 
-task zDepsClone, "clone Nephyr deps":
+task zDepsClones, "clone Nephyr deps":
   var wasCloned = false
   withDir("../../packages/"):
     for dep in ["mcu_utils", "fastrpc", "nephyr"]:
@@ -348,28 +348,28 @@ task zephyr_flash, "Flash Nephyr project":
 ### Actions to ensure correct steps occur before/after certain tasks ###
 
 before zcompile:
-  zDepsCloneTask()
+  zDepsClonesTask()
   zConfigureTask()
 
 after zcompile:
   zInstallHeadersTask()
 
 before zbuild:
-  zDepsCloneTask()
+  zDepsClonesTask()
   zConfigureTask()
   zCompileTask()
   zInstallHeadersTask()
 
 ## TODO: erase me after transition to zbuild, zcompile
 before zephyr_compile:
-  zDepsCloneTask()
+  zDepsClonesTask()
   zConfigureTask()
 
 after zephyr_compile:
   zInstallHeadersTask()
 
 before zephyr_build:
-  zDepsCloneTask()
+  zDepsClonesTask()
   zConfigureTask()
   zCompileTask()
   zInstallHeadersTask()
