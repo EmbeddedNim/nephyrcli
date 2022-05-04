@@ -88,6 +88,8 @@ proc parseNimbleArgs(): NimbleArgs =
   # if rcode != 0:
   #   raise newException( ValueError, fmt"error running getting Nephyr path using: {npathcmd}")
 
+  echo fmt"{idf_args=}"
+  echo fmt"{child_args=}"
   # TODO: make these configurable and add more examples...
   let
     flags = idf_args.filterIt(it.contains(":")).mapIt(it.split(":")).mapIt( (it[0], it[1])).toTable()

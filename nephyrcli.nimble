@@ -1,6 +1,6 @@
 # Package
 
-version       = "0.2.30"
+version       = "0.2.31"
 author        = "Jaremy Creechley"
 description   = "nephyr cli utils"
 license       = "Apache-2.0"
