@@ -353,3 +353,17 @@ before zbuild:
   zConfigureTask()
   zCompileTask()
   zInstallHeadersTask()
+
+## TODO: erase me after transition to zbuild, zcompile
+before zephyr_compile:
+  zDepsCloneTask()
+  zConfigureTask()
+
+after zephyr_compile:
+  zInstallHeadersTask()
+
+before zephyr_build:
+  zDepsCloneTask()
+  zConfigureTask()
+  zCompileTask()
+  zInstallHeadersTask()
