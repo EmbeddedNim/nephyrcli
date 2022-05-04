@@ -317,7 +317,7 @@ task zDepsClone, "clone Nephyr deps":
   echo fmt"work: {projectDir()=}"
   echo fmt"work: {getCurrentDir()=}"
   echo fmt"work: {srcDir=}"
-  let pkgDir = nopts.projDir / ".. " / ".." / "packages/"
+  let pkgDir = nopts.projDir & "../../packages/"
   echo fmt"work: {pkgDir=}"
   withDir(pkgDir):
     for dep in ["mcu_utils", "fastrpc", "nephyr"]:
