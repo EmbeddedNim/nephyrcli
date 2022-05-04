@@ -2,11 +2,12 @@ import system/nimscript
 
 import strutils, sequtils
 import tables
+import json
 
 import os except getEnv, paramCount, paramStr, existsEnv, fileExists, dirExists, findExe
 
-import json
-import ../zephyr/zconfs
+
+import zconfs
 
 if getEnv("BOARD") == "" and commandLineParams()[^1].startsWith("zephyr_"):
   echo "[Nephyr WARNING]: No BOARD variable found. Make sure you source an environment first! "
