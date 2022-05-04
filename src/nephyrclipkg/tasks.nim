@@ -316,7 +316,7 @@ task zDepsClone, "clone Nephyr deps":
       if not dirExists(dep):
         wasCloned = true
         echo fmt"cloning: {dep}"
-        exec(fmt"git clone https://github.com/EmbeddedNim/{dep}")
+        exec(fmt"git clone https://github.com/EmbeddedNim/{dep}", "")
       else:
         echo fmt"dir exists: {dep}"
   echo "ls cwd: ", ".".listFiles()
