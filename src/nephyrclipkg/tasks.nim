@@ -201,6 +201,7 @@ task zclean, "Clean nimcache":
     nopts = parseNimbleArgs()
     cachedir = nopts.cachedir
   
+  echo "nopts: ", repr(nopts)
   echo "cachedir: ", $cachedir
   if dirExists(cachedir):
     echo "...removing nimcache"
