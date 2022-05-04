@@ -5,6 +5,7 @@ author        = "Jaremy Creechley"
 description   = "nephyr cli utils"
 license       = "Apache-2.0"
 srcDir        = "src"
+installExt    = @["nim"]
 binDir        = "bin"
 bin           = @["nephrcli", "nfreeze", "nunfreeze"]
 
