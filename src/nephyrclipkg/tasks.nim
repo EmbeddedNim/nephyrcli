@@ -317,7 +317,7 @@ task zDepsClone, "clone Nephyr deps":
   echo fmt"work: {projectDir()=}"
   echo fmt"work: {getCurrentDir()=}"
   echo fmt"work: {srcDir=}"
-  withDir(projectDir() & "/../../packages/"):
+  withDir(nopts.projDir / ".. " / ".." / "packages/"):
     for dep in ["mcu_utils", "fastrpc", "nephyr"]:
       if not dirExists(dep):
         wasCloned = true
