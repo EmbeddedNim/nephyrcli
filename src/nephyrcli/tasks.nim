@@ -327,17 +327,17 @@ task zDepsClone, "clone Nephyr deps":
       echo "Note: running again"
       exec(fmt"nimble sync")
 
-task zephyr_configure, "Configure Zephyr project":
+task zephyr_configure, "Configure Nephyr project":
   zconfigureTask()
 
-task zephyr_compile, "Build Zephyr project":
+task zephyr_compile, "Compile Nephyr Nim sources":
   zcompileTask()
 
-task zephyr_build, "Build Zephyr project":
+task zephyr_build, "Build Nephyr/Zephyr firmware":
   zbuildTask()
 
-task zephyr_compile, "Build Zephyr project":
-  zcompileTask()
+task zephyr_flash, "Flash Nephyr project":
+  zflashTask()
 
 ### Actions to ensure correct steps occur before/after certain tasks ###
 
