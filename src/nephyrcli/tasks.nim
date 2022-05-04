@@ -1,6 +1,11 @@
 when not defined(nimscript):
   import system/nimscript
 
+  template before(name, blk: untyped) =
+    discard
+  template after(name, blk: untyped) =
+    discard
+
 import strutils, sequtils, strformat
 import tables, json
 
@@ -176,7 +181,7 @@ when defined(NEPHYR_TASKS_FIX_TEMPLATES):
       echo "...copying template: ", fileName, " from: ", tmpltPth, " to: ", getCurrentDir()
       writeFile(nopts.appsrc / nopts.projname / fileName, readFile(tmpltPth) % tmplt_args )
 
-task zephyr_install_headers, "Install nim headers":
+task zInstallHeaders, "Install nim headers":
   echo "\n[Nephyr] Installing nim headers:"
   let
     nopts = parseNimbleArgs()
@@ -212,13 +217,12 @@ task zephyr_clean, "Clean nimcache":
     rmDir(nopts.projdir / "build")
     rmDir(nopts.projdir / "build_" & getEnv("BOARD"))
 
-  
-task zephyr_configure, "Run CMake configuration":
+task zconfigure, "Run CMake configuration":
   echo "CALLED ZEPHYR_CONFIGURE"
   exec("west build -p always -b ${BOARD} -d build_${BOARD} --cmake-only -c " & extraArgs())
 
 
-task zephyr_compile, "Compile Nim project for Zephyr program":
+task zcompile, "Compile Nim project for Zephyr program":
   # compile nim project
   let board = getEnv("BOARD") 
   echo "CALLED ZEPHYR_COMPILE"
@@ -276,7 +280,7 @@ task zephyr_compile, "Compile Nim project for Zephyr program":
   cd(nopts.projdir)
   selfExec(compiler_cmd)
 
-task zephyr_build, "Build Zephyr project":
+task zbuild, "Build Zephyr project":
   echo "\n[Nephyr] Building Zephyr/west project:"
 
   if findExe("west") == "":
@@ -285,7 +289,7 @@ task zephyr_build, "Build Zephyr project":
 
   exec("west build -p always -b ${BOARD} -d build_${BOARD} " & extraArgs())
 
-task zephyr_flash, "Flasing Zephyr project":
+task zflash, "Flasing Zephyr project":
   echo "\n[Nephyr] Flashing Zephyr/west project:"
 
   if findExe("west") == "":
@@ -295,7 +299,7 @@ task zephyr_flash, "Flasing Zephyr project":
   exec("west -v flash -d build_${BOARD} -r ${FLASHER:-jlink} ")
 
 
-task zephyr_sign, "Flasing Zephyr project":
+task zsign, "Flasing Zephyr project":
   echo "\n[Nephyr] Flashing Zephyr/west project:"
 
   if findExe("west") == "":
@@ -305,10 +309,7 @@ task zephyr_sign, "Flasing Zephyr project":
   # FIXME!!
   exec("west sign -t imgtool -p ${MCUBOOT}/scripts/imgtool.py -d build_${BOARD} -- --key ${MCUBOOT}/root-rsa-2048.pem")
 
-
-### Actions to ensure correct steps occur before/after certain tasks ###
-
-task depsClone, "clone Nephyr deps":
+task zDepsClone, "clone Nephyr deps":
   var wasCloned = false
   withDir("../../packages/"):
     for dep in ["mcu_utils", "fastrpc", "nephyr"]:
@@ -326,15 +327,29 @@ task depsClone, "clone Nephyr deps":
       echo "Note: running again"
       exec(fmt"nimble sync")
 
-before zephyr_compile:
-  depsCloneTask()
-  zephyrConfigureTask()
+task zephyr_configure, "Configure Zephyr project":
+  zconfigureTask()
 
-after zephyr_compile:
-  zephyrInstallHeadersTask()
+task zephyr_compile, "Build Zephyr project":
+  zcompileTask()
 
-before zephyr_build:
+task zephyr_build, "Build Zephyr project":
+  zbuildTask()
+
+task zephyr_compile, "Build Zephyr project":
+  zcompileTask()
+
+### Actions to ensure correct steps occur before/after certain tasks ###
+
+before zcompile:
   depsCloneTask()
-  zephyrConfigureTask()
-  zephyrCompileTask()
-  zephyrInstallHeadersTask()
+  zConfigureTask()
+
+after zcompile:
+  zInstallHeadersTask()
+
+before zbuild:
+  depsCloneTask()
+  zConfigureTask()
+  zCompileTask()
+  zInstallHeadersTask()
