@@ -13,7 +13,7 @@ import os except getEnv, paramCount, paramStr, existsEnv, fileExists, dirExists,
 
 import zconfs
 
-if getEnv("BOARD") == "" and commandLineParams()[^1].startsWith("zephyr_"):
+if getEnv("BOARD") == "" and commandLineParams()[^1].startsWith("z"):
   echo "[Nephyr WARNING]: No BOARD variable found. Make sure you source an environment first! "
   echo "\nEnvironments available: "
   for f in listFiles("envs/"):
@@ -28,6 +28,8 @@ type
     projname: string
     projsrc: string
     projfile: string
+    projbuild: string
+    projboard: string
     appsrc: string
     args: seq[string]
     child_args: seq[string]
@@ -40,6 +42,14 @@ type
     distclean: bool
     help: bool
 
+proc nexec(cmd: string) =
+  echo "[nephyrcli] exec: '" & cmd & "'"
+  exec(cmd)
+
+proc nRmDir(dir: string) =
+  echo "[nephyrcli] remove: '" & dir & "'"
+  rmDir(dir)
+
 proc parseNimbleArgs(): NimbleArgs =
   var
     projsrc = "src"
@@ -50,29 +60,46 @@ proc parseNimbleArgs(): NimbleArgs =
     progfile = bin[0]
 
   var
-    idf_idx = -1
-    pre_idf_cache_set = false
+    idf_cache_set = false
     override_srcdir = false
     post_idf_args = false
+    post_idf_command = false
     idf_args: seq[string] = @[]
     child_args: seq[string] = @[]
 
 
+  let
+    zCommandsBasic = @["zconfigure", "zclean", "zcompile", "zbuild", "zflash"]
+    zCommandsBasicBefore = zCommandsBasic.mapIt(it & "before")
+    zCommandsBasicAfter = zCommandsBasic.mapIt(it & "after")
+    zCommandsOld = @["zephyr_configure", "zephyr_clean", "zephyr_compile", "zephyr_build", "zephyr_flash"]
+    zCommands = zCommandsBasic &
+                zCommandsBasicBefore & zCommandsBasicAfter &
+                zCommandsOld 
+
   for idx in 0..paramCount():
-    if post_idf_args:
-      child_args.add(paramStr(idx))
+    # echo fmt"{paramStr(idx)=}"
+    if paramStr(idx).toLowerAscii() in zCommands:
+      post_idf_command = true
       continue
-    elif paramStr(idx) == "--":
+    if paramStr(idx) == "--":
       post_idf_args = true
       continue
+    if paramStr(idx).startsWith("--nimcache"):
+      idf_cache_set = true
+      continue
 
-    # setup to find all commands after "zephyr" commands
-    if idf_idx > 0:
+    if post_idf_args:
+      # setup to find all commands '--' to pass to west
+      child_args.add(paramStr(idx))
+    elif post_idf_command:
+      # setup to find all commands after "zCommands" to pass to our task
+      echo fmt"{post_idf_command=}"
       idf_args.add(paramStr(idx))
-    elif paramStr(idx).startsWith("zephyr"):
-      idf_idx = idx
-    elif paramStr(idx).startsWith("--nimcache"):
-      pre_idf_cache_set = true
+
+  child_args = @[] ##\
+    # ignore child args for now,
+    # need to figure out how to specify which task/child
 
   if not projsrc.endsWith("src"):
     if override_srcdir:
@@ -82,109 +109,48 @@ proc parseNimbleArgs(): NimbleArgs =
       echo "  got source directory: ", projsrc
       quit(1)
 
-  # let
-  #   npathcmd = "nimble --silent path nephyrcli"
-  #   (nephyrPath, rcode) = system.gorgeEx(npathcmd)
-  # if rcode != 0:
-  #   raise newException( ValueError, fmt"error running getting Nephyr path using: {npathcmd}")
+  # echo fmt"{idf_args=}"
+  # echo fmt"{child_args=}"
 
-  echo fmt"{idf_args=}"
-  echo fmt"{child_args=}"
-  # TODO: make these configurable and add more examples...
   let
     flags = idf_args.filterIt(it.contains(":")).mapIt(it.split(":")).mapIt( (it[0], it[1])).toTable()
-    zephyr_template  = flags.getOrDefault("--zephyr-template", "networking")
     app_template  = flags.getOrDefault("--app-template", "http_server")
-    # TODO: handle this for zephyr
-    # zephyr_ver  = flags.getOrDefault("--Zephyr-version", "V2.7").replace(".", "_").toUpper()
 
   result = NimbleArgs(
     args: idf_args,
     child_args: child_args,
-    cachedir: if pre_idf_cache_set: nimCacheDir() else: default_cache_dir,
+    cachedir: if idf_cache_set: nimCacheDir() else: default_cache_dir,
     projdir: thisDir(),
     projsrc: projsrc,
     appsrc: srcDir,
     projname: projectName(),
     projfile: progfile,
-    # nephyrpath: nephyrPath,
-    # zephyr_template: zephyr_template,
+    projboard: getEnv("BOARD"),
     app_template: app_template,
-    # forceupdatecache = "--forceUpdateCache" in idf_args
     debug: "--zephyr-debug" in idf_args,
     forceclean: "--clean" in idf_args,
     distclean: "--dist-clean" in idf_args or "--clean-build" in idf_args,
     help: "--help" in idf_args or "-h" in idf_args
   )
 
+  result.projbuild = result.projdir / ("build_" & result.projboard)
+
   if result.debug: echo "[Got nimble args: ", $result, "]\n"
 
-
-# CONFIG_NET_IPV6=y
 
 proc pathCmakeConfig*(buildDir: string,
                       zephyrDir="zephyr",
                       configName=".config"): string =
   var 
     fpath = buildDir / zephyrDir / configName
-  echo "CMAKE ZCONFG: ", fpath
+  echo "[nephyrcli] CMAKE ZCONFG: ", fpath
   return fpath
 
 proc extraArgs(): string =
   result = if existsEnv("NEPHYR_SHIELDS"): "-- -DSHIELD=\"${NEPHYR_SHIELDS}\"" else: ""
 
-when defined(NEPHYR_TASKS_FIX_TEMPLATES):
-  task zephyr_list_templates, "List templates available for setup":
-    echo "\n[Nephyr] Listing setup templates:\n"
-    var nopts = parseNimbleArgs()
-    let 
-      zephyr_template_dir = nopts.nephyrpath / "nephyr" / "build_utils" / "templates" / "zephyr_templates" 
-      app_template_dir = nopts.nephyrpath / "nephyr" / "build_utils" / "templates" / "app_templates" 
-      zephyr_template_files = listDirs(zephyr_template_dir)
-      app_template_files = listDirs(app_template_dir)
-
-    echo (@["zephyr templates:"] & zephyr_template_files.mapIt(it.relativePath(zephyr_template_dir))).join("\n - ")
-    echo (@["app templates:"] & app_template_files.mapIt(it.relativePath(app_template_dir))).join("\n - ")
-
-  task zephyr_setup, "Setup a new Zephyr / nephyr project structure":
-    echo "\n[Nephyr] setting up project:"
-    var nopts = parseNimbleArgs()
-
-    echo "...create project source directory" 
-    mkDir(nopts.projsrc)
-
-    echo "...writing cmake lists" 
-    let
-      cmake_template = readFile(nopts.nephyrpath / "nephyr" / "build_utils" / "templates" / "CMakeLists.txt")
-      zephyr_template_files: seq[string] = @[] # listFiles(nopts.nephyrpath / "nephyr" / "build_utils" / "templates" / "zephyr_templates" / nopts.zephyr_template )
-      app_template_files: seq[string] = @[] # listFiles(nopts.nephyrpath / "nephyr" / "build_utils" / "templates" / "app_templates" / nopts.app_template )
-    var
-      tmplt_args = @[
-        "NIMBLE_PROJ_NAME", nopts.projname,
-        "NIMBLE_NIMCACHE", nopts.cachedir,
-        ]
-
-    writeFile("CMakeLists.txt", cmake_template % tmplt_args)
-
-    tmplt_args.insert(["NIMBLE_NIMCACHE", nopts.cachedir.relativePath(nopts.projsrc) ], 0)
-
-    # writeFile(".gitignore", readFile(".gitignore") & "\n" @["build/", "#src/nimcache/"].join("\n") & "\n")
-
-    echo fmt"{'\n'}Copying zephyr template files for `{nopts.zephyr_template}`:" 
-    for tmpltPth in zephyr_template_files:
-      let fileName = tmpltPth.extractFilename()
-      echo "...copying template: ", fileName, " from: ", tmpltPth, " to: ", getCurrentDir()
-      writeFile(nopts.projsrc / fileName, readFile(tmpltPth) % tmplt_args )
-    
-    echo fmt"{'\n'}Copying app template files for `{nopts.app_template}`:" 
-    mkdir(nopts.appsrc / nopts.projname)
-    for tmpltPth in app_template_files:
-      let fileName = tmpltPth.extractFilename()
-      echo "...copying template: ", fileName, " from: ", tmpltPth, " to: ", getCurrentDir()
-      writeFile(nopts.appsrc / nopts.projname / fileName, readFile(tmpltPth) % tmplt_args )
-
 task zInstallHeaders, "Install nim headers":
-  echo "\n[Nephyr] Installing nim headers:"
+  echo "\n[nephyrcli] Installing nim headers:"
   let
     nopts = parseNimbleArgs()
     cachedir = nopts.cachedir
@@ -192,37 +158,29 @@ task zInstallHeaders, "Install nim headers":
   if not fileExists(cachedir / "nimbase.h"):
     let nimbasepath = selfExe().splitFile.dir.parentDir / "lib" / "nimbase.h"
 
-    echo("...copying nimbase file into the Nim cache directory ($#)" % [cachedir/"nimbase.h"])
+    echo("[nephyrcli] ...copying nimbase file into the Nim cache directory ($#)" % [cachedir/"nimbase.h"])
     cpFile(nimbasepath, cachedir / "nimbase.h")
   else:
-    echo("...nimbase.h already exists")
+    echo("[nephyrcli] ...nimbase.h already exists")
 
 task zclean, "Clean nimcache":
-  echo "\n[Nephyr] Cleaning nimcache:"
+  echo "\n[nephyrcli] Cleaning nimcache:"
   let
     nopts = parseNimbleArgs()
     cachedir = nopts.cachedir
   
-  echo "nopts: ", repr(nopts)
-  echo "cachedir: ", $cachedir
   if dirExists(cachedir):
-    echo "...removing nimcache"
-    rmDir(cachedir)
+    echo fmt"[nephyrcli] ...removing nimcache {cachedir=}"
+    nRmDir(cachedir)
   else:
-    echo "...not removing nimcache, directory not found"
+    echo fmt"[nephyrcli] ...cache not found; not removing nimcache {cachedir=}"
 
   if nopts.forceclean or nopts.distclean:
-    echo "...cleaning nim cache"
-    rmDir(nopts.cachedir)
-
-  if nopts.distclean:
-    echo "...cleaning Zephyr build cache"
-    rmDir(nopts.projdir / "build")
-    rmDir(nopts.projdir / "build_" & getEnv("BOARD"))
+    echo "[nephyrcli] ...cleaning zephyr build cache"
+    nRmDir(nopts.projbuild)
 
 task zconfigure, "Run CMake configuration":
-  echo "CALLED ZEPHYR_CONFIGURE"
-  exec("west build -p always -b ${BOARD} -d build_${BOARD} --cmake-only -c " & extraArgs())
+  nexec("west build -p always -b ${BOARD} -d build_${BOARD} --cmake-only -c " & extraArgs())
 
 
 task zcompile, "Compile Nim project for Zephyr program":
@@ -232,26 +190,17 @@ task zcompile, "Compile Nim project for Zephyr program":
   var nopts = parseNimbleArgs() 
   let zconfpath = pathCmakeConfig(buildDir= "build_" & board)
 
-  echo "\n[Nephyr] Compiling:"
+  echo "\n[nephyrcli] Compiling:"
 
   if not dirExists("src/"):
     echo "\nWarning! The `src/` directory is required but appear appear to exist\n"
     echo "Did you run `nimble zephyr_setup` before trying to compile?\n"
-
-  if nopts.forceclean or nopts.distclean:
-    echo "...cleaning nim cache"
-    rmDir(nopts.cachedir)
-
-  if nopts.distclean:
-    echo "...cleaning Zephyr build cache"
-    rmDir(nopts.projdir / "build")
 
   let
     configs = parseCmakeConfig(zconfpath)
     hasMPU = configs.getOrDefault("CONFIG_MPU", % false).getBool(false)
     hasMMU = configs.getOrDefault("CONFIG_MMU", % false).getBool(false)
 
-    # set whether to use k_malloc or libC malloc based on MPU 
     # TODO: FIXME: maybe MMU's as well?
     useMallocFlag =
       if hasMPU or hasMMU: "-d:zephyrUseLibcMalloc"
@@ -275,42 +224,37 @@ task zcompile, "Compile Nim project for Zephyr program":
   echo "compiler_cmd: ", compiler_cmd
   echo "compiler_childargs: ", nopts.child_args
 
-  # zconf.hasKey("CONFIG_NET_IPV6"):
-    # switch("define","net_ipv6")
-  if nopts.debug:
-    echo "idf compile: command: ", compiler_cmd  
-
   cd(nopts.projdir)
   selfExec(compiler_cmd)
 
 task zbuild, "Build Zephyr project":
-  echo "\n[Nephyr] Building Zephyr/west project:"
+  echo "\n[nephyrcli] Building Zephyr/west project:"
 
   if findExe("west") == "":
     echo "\nError: west not found. Please run the Zephyr export commands: e.g. ` source ~/zephyrproject/zephyr/zephyr-env.sh` and try again.\n"
     quit(2)
 
-  exec("west build -p always -b ${BOARD} -d build_${BOARD} " & extraArgs())
+  nexec("west build -p always -b ${BOARD} -d build_${BOARD} " & extraArgs())
 
 task zflash, "Flasing Zephyr project":
-  echo "\n[Nephyr] Flashing Zephyr/west project:"
+  echo "\n[nephyrcli] Flashing Zephyr/west project:"
 
   if findExe("west") == "":
     echo "\nError: west not found. Please run the Zephyr export commands: e.g. ` source ~/zephyrproject/zephyr/zephyr-env.sh` and try again.\n"
     quit(2)
 
-  exec("west -v flash -d build_${BOARD} -r ${FLASHER:-jlink} ")
+  nexec("west -v flash -d build_${BOARD} -r ${FLASHER:-jlink} ")
 
 
 task zsign, "Flasing Zephyr project":
-  echo "\n[Nephyr] Flashing Zephyr/west project:"
+  echo "\n[nephyrcli] Flashing Zephyr/west project:"
 
   if findExe("west") == "":
     echo "\nError: west not found. Please run the Zephyr export commands: e.g. ` source ~/zephyrproject/zephyr/zephyr-env.sh` and try again.\n"
     quit(2)
 
   # FIXME!!
-  exec("west sign -t imgtool -p ${MCUBOOT}/scripts/imgtool.py -d build_${BOARD} -- --key ${MCUBOOT}/root-rsa-2048.pem")
+  nexec("west sign -t imgtool -p ${MCUBOOT}/scripts/imgtool.py -d build_${BOARD} -- --key ${MCUBOOT}/root-rsa-2048.pem")
 
 task zDepsClone, "clone Nephyr deps":
   var nopts = parseNimbleArgs()
@@ -328,25 +272,25 @@ task zDepsClone, "clone Nephyr deps":
       if not dirExists(dep):
         wasCloned.add dep
         echo fmt"[nephyrcli] cloning: {dep}"
-        exec("echo \"MYPWD:\": $(pwd)".fmt)
-        exec(fmt"git clone -v https://github.com/EmbeddedNim/{dep}")
-        exec("echo \"MYDEP:\": $(ls -1 {dep})".fmt)
+        nexec("echo \"MYPWD:\": $(pwd)".fmt)
+        nexec(fmt"git clone -v https://github.com/EmbeddedNim/{dep}")
+        nexec("echo \"MYDEP:\": $(ls -1 {dep})".fmt)
       else:
         echo fmt"[nephyrcli] not cloning, dir exists: {dep}"
 
   for dep in devDeps:
     let depPth = pkgDir & dep
     echo(fmt"[nephyrcli] develop: {depPth}")
-    exec(fmt"nimble develop --add:{depPth}")
+    nexec(fmt"nimble develop --add:{depPth}")
 
   if wasCloned.len() > 0:
     zDepsCloneTask()
     try:
-      exec(fmt"nimble sync")
+      nexec(fmt"nimble sync")
     except OSError:
       echo "Note: nim sync fails on first run"
       echo "Note: running again"
-  exec(fmt"nimble sync")
+  nexec(fmt"nimble sync")
 
 task zephyr_configure, "Configure Nephyr project":
   zconfigureTask()
@@ -364,7 +308,7 @@ task zephyr_flash, "Flash Nephyr project":
 
 before zcompile:
   # zDepsCloneTask()
-  zcleanTask()
+  zCleanTask()
   zConfigureTask()
 
 after zcompile:
@@ -372,7 +316,7 @@ after zcompile:
 
 before zbuild:
   # zDepsCloneTask()
-  zcleanTask()
+  zCleanTask()
   zConfigureTask()
   zCompileTask()
   zInstallHeadersTask()
@@ -380,7 +324,7 @@ before zbuild:
 ## TODO: erase me after transition to zbuild, zcompile
 before zephyr_compile:
   # zDepsCloneTask()
-  zcleanTask()
+  zCleanTask()
   zConfigureTask()
 
 after zephyr_compile:
@@ -388,7 +332,7 @@ after zephyr_compile:
 
 before zephyr_build:
   # zDepsCloneTask()
-  zcleanTask()
+  zCleanTask()
   zConfigureTask()
   zCompileTask()
   zInstallHeadersTask()
