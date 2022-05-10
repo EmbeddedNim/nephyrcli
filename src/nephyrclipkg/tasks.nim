@@ -30,6 +30,7 @@ type
     projfile: string
     projbuild: string
     projboard: string
+    projflasher: string
     appsrc: string
     args: seq[string]
     child_args: seq[string]
@@ -180,8 +181,8 @@ task zclean, "Clean nimcache":
     nRmDir(nopts.projbuild)
 
 task zconfigure, "Run CMake configuration":
-  nexec("west build -p always -b ${BOARD} -d build_${BOARD} --cmake-only -c " & extraArgs())
-
+  var nopts = parseNimbleArgs()
+  nexec(fmt"west build -p always -b {nopts.projBoard} -d build_{nopts.projBoard} --cmake-only -c {extraArgs()}")
 
 task zcompile, "Compile Nim project for Zephyr program":
   # compile nim project
@@ -228,25 +229,28 @@ task zcompile, "Compile Nim project for Zephyr program":
   selfExec(compiler_cmd)
 
 task zbuild, "Build Zephyr project":
+  var nopts = parseNimbleArgs()
   echo "\n[nephyrcli] Building Zephyr/west project:"
 
   if findExe("west") == "":
     echo "\nError: west not found. Please run the Zephyr export commands: e.g. ` source ~/zephyrproject/zephyr/zephyr-env.sh` and try again.\n"
     quit(2)
 
-  nexec("west build -p always -b ${BOARD} -d build_${BOARD} " & extraArgs())
+  nexec(fmt"west build -p always -b {nopts.projBoard} -d build_{nopts.projBoard} {extraArgs()}")
 
 task zflash, "Flasing Zephyr project":
+  var nopts = parseNimbleArgs()
   echo "\n[nephyrcli] Flashing Zephyr/west project:"
 
   if findExe("west") == "":
     echo "\nError: west not found. Please run the Zephyr export commands: e.g. ` source ~/zephyrproject/zephyr/zephyr-env.sh` and try again.\n"
     quit(2)
 
-  nexec("west -v flash -d build_${BOARD} -r ${FLASHER:-jlink} ")
+  nexec(fmt"west -v flash -d build_{nopts.projBoard} -r {nopts.projflasher} ")
 
 
 task zsign, "Flasing Zephyr project":
+  var nopts = parseNimbleArgs()
   echo "\n[nephyrcli] Flashing Zephyr/west project:"
 
   if findExe("west") == "":
