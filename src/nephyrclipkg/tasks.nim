@@ -314,33 +314,39 @@ task zsign, "Flasing Zephyr project":
 
 task zDepsClone, "clone Nephyr deps":
   var nopts = parseNimbleArgs()
-  var wasCloned = false
   echo fmt"work: {nopts.projDir=}"
   echo fmt"work: {projectPath()=}"
   echo fmt"work: {projectDir()=}"
   echo fmt"work: {getCurrentDir()=}"
   echo fmt"work: {srcDir=}"
+
   let pkgDir = nopts.projDir & "/../../packages/"
-  echo fmt"work: {pkgDir=}"
+  let devDeps = @["mcu_utils", "fastrpc", "nephyr"]
+  var wasCloned: seq[string]
   withDir(pkgDir):
-    for dep in ["mcu_utils", "fastrpc", "nephyr"]:
+    for dep in devDeps:
       if not dirExists(dep):
-        wasCloned = true
-        echo fmt"cloning: {dep}"
+        wasCloned.add dep
+        echo fmt"[nephyrcli] cloning: {dep}"
         exec("echo \"MYPWD:\": $(pwd)".fmt)
         exec(fmt"git clone -v https://github.com/EmbeddedNim/{dep}")
         exec("echo \"MYDEP:\": $(ls -1 {dep})".fmt)
       else:
-        echo fmt"dir exists: {dep}"
-  echo "ls cwd: ", ".".listFiles()
-  echo "ls packages:", "../../packages/".listFiles()
-  if wasCloned:
+        echo fmt"[nephyrcli] not cloning, dir exists: {dep}"
+
+  for dep in devDeps:
+    let depPth = pkgDir & dep
+    echo(fmt"[nephyrcli] develop: {depPth}")
+    exec(fmt"nimble develop --add:{depPth}")
+
+  if wasCloned.len() > 0:
+    zDepsCloneTask()
     try:
       exec(fmt"nimble sync")
     except OSError:
       echo "Note: nim sync fails on first run"
       echo "Note: running again"
-      exec(fmt"nimble sync")
+  exec(fmt"nimble sync")
 
 task zephyr_configure, "Configure Nephyr project":
   zconfigureTask()
@@ -357,7 +363,7 @@ task zephyr_flash, "Flash Nephyr project":
 ### Actions to ensure correct steps occur before/after certain tasks ###
 
 before zcompile:
-  zDepsCloneTask()
+  # zDepsCloneTask()
   zcleanTask()
   zConfigureTask()
 
@@ -365,7 +371,7 @@ after zcompile:
   zInstallHeadersTask()
 
 before zbuild:
-  zDepsCloneTask()
+  # zDepsCloneTask()
   zcleanTask()
   zConfigureTask()
   zCompileTask()
@@ -373,7 +379,7 @@ before zbuild:
 
 ## TODO: erase me after transition to zbuild, zcompile
 before zephyr_compile:
-  zDepsCloneTask()
+  # zDepsCloneTask()
   zcleanTask()
   zConfigureTask()
 
@@ -381,7 +387,7 @@ after zephyr_compile:
   zInstallHeadersTask()
 
 before zephyr_build:
-  zDepsCloneTask()
+  # zDepsCloneTask()
   zcleanTask()
   zConfigureTask()
   zCompileTask()
