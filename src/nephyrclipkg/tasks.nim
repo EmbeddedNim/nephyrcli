@@ -185,11 +185,10 @@ task zconfigure, "Run CMake configuration":
   nexec(fmt"west build -p always -b {nopts.projBoard} -d build_{nopts.projBoard} --cmake-only -c {extraArgs()}")
 
 task zcompile, "Compile Nim project for Zephyr program":
-  # compile nim project
-  let board = getEnv("BOARD") 
-  echo "CALLED ZEPHYR_COMPILE"
-  var nopts = parseNimbleArgs() 
-  let zconfpath = pathCmakeConfig(buildDir= "build_" & board)
+  ## compile nim project
+  ## 
+  var nopts = parseNimbleArgs()
+  let zconfpath = pathCmakeConfig(buildDir=nopts.projBuild)
 
   echo "\n[nephyrcli] Compiling:"
 
@@ -214,7 +213,7 @@ task zcompile, "Compile Nim project for Zephyr program":
       "--nomain",
       "--compileOnly",
       "--nimcache:" & nopts.cachedir.quoteShell(),
-      "-d:board:" & board,
+      "-d:board:" & nopts.projboard,
       "-d:NimAppMain",
       "" & useMallocFlag, 
       "-d:ZephyrConfigFile:"&zconfpath, # this is important now! sets the config flags
@@ -294,6 +293,7 @@ task zDepsClone, "clone Nephyr deps":
     except OSError:
       echo "Note: nim sync fails on first run"
       echo "Note: running again"
+    nexec(fmt"nimble setup")
   nexec(fmt"nimble sync")
 
 task zephyr_configure, "Configure Nephyr project":
